@@ -13,6 +13,7 @@ It report its results in standard C<Test::Simple> fashion:
   use Test::Strict tests => 2;
   syntax_ok( 'bin/myscript.pl' );
   strict_ok( 'My::Module', "use strict; in My::Module" );
+  warnings_ok( 'lib/My/Module.pm' );
 
 Module authors can include the following in a t/strict.t
 and have C<Test::Strict> automatically find and check
@@ -51,6 +52,10 @@ can ensure his code is tested above a preset level of I<kwality> throughout the 
 
 Along with L<Test::Pod>, this module can provide the first tests to setup for a module author.
 
+This module should be able to run under the -T flag for perl >= 5.6.
+All paths are untainted with the following pattern: C<qr|^([-+@\w./:\\]+)$|>
+controlled by C<$Test::Strict::UNTAINT_PATTERN>.
+
 =cut
 
 use strict;
@@ -58,15 +63,24 @@ use 5.004;
 use Test::Builder;
 use File::Spec;
 use FindBin qw($Bin);
-use File::Find::Rule;
+use File::Find;
 
-use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER);
-$VERSION = '0.02';
-$PERL = $^X || 'perl';
-$COVERAGE_THRESHOLD = 50;
+use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS);
+$VERSION = '0.03';
+$PERL    = $^X || 'perl';
+$COVERAGE_THRESHOLD = 50; # 50%
+$UNTAINT_PATTERN    = qr|^([-+@\w./:\\]+)$|;
+$PERL_PATTERN       = qr/^#!.*perl/;
+$CAN_USE_WARNINGS   = ($] >= 5.006);
 
 my $Test  = Test::Builder->new;
 my $updir = File::Spec->updir();
+my %file_find_arg = ($] <= 5.006) ? ()
+                                  : (
+                                      untaint         => 1,
+                                      untaint_pattern => $UNTAINT_PATTERN,
+                                      untaint_skip    => 1,
+                                    );
 
 
 sub import {
@@ -75,6 +89,7 @@ sub import {
   {
     no strict 'refs';
     *{$caller.'::strict_ok'}         = \&strict_ok;
+    *{$caller.'::warnings_ok'}       = \&warnings_ok;
     *{$caller.'::syntax_ok'}         = \&syntax_ok;
     *{$caller.'::all_perl_files_ok'} = \&all_perl_files_ok;
     *{$caller.'::all_cover_ok'}      = \&all_cover_ok;
@@ -97,11 +112,19 @@ sub all_perl_files {
 sub all_files {
   my @base_dirs = @_ ? @_
                      : File::Spec->catdir($Bin, $updir);
-  return map  { File::Spec->no_upwards( $_ ) }
-         grep { $_ !~ m![\\/]?CVS[\\/]|[\\/]?.svn[\\/]! }  # Filter out cvs or subversion dirs/
-              File::Find::Rule->file
-                              ->readable
-                              ->in( @base_dirs );
+  my @found;
+  my $want_sub = sub {
+    return if ($File::Find::dir =~ m![\\/]?CVS[\\/]|[\\/]?.svn[\\/]!); # Filter out cvs or subversion dirs/
+    return unless (-f $File::Find::name && -r _);
+    push @found, File::Spec->no_upwards( $File::Find::name );
+  };
+  my $find_arg = {
+                    %file_find_arg,
+                    wanted   => $want_sub,
+                    no_chdir => 1,
+                 };
+  find( $find_arg, @base_dirs);
+  @found;
 }
 
 
@@ -130,9 +153,14 @@ sub syntax_ok {
     $Test->diag( "$file is not a perl module or a perl script" );
     return;
   }
+
   my $inc = join(' -I ', @INC) || '';
   $inc = "-I $inc" if $inc;
-  my $eval = `$PERL $inc -c $file 2>&1`;
+  $file            = _untaint($file);
+  my $perl_bin     = _untaint($PERL);
+  local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
+
+  my $eval = `$perl_bin $inc -c $file 2>&1`;
   my $ok = $eval =~ qr!$file syntax OK!ms;
   $Test->ok($ok, $test_txt);
   unless ($ok) {
@@ -145,13 +173,14 @@ sub syntax_ok {
 =head2 strict_ok( $file [, $text] )
 
 Check if C<$file> contains a C<use strict;> statement.
+
 This is a pretty naive test which may be fooled in some edge cases.
 For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both used.
 
 =cut
 
 sub strict_ok {
-  my $file = shift;
+  my $file     = shift;
   my $test_txt = shift || "use strict   $file";
   $file = module_to_path($file);
   open my($fh), $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
@@ -160,6 +189,55 @@ sub strict_ok {
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
     if ( /\buse\s+strict\s*;/ ) {
+      $Test->ok(1, $test_txt);
+      return 1;
+    }
+  }
+  $Test->ok(0, $test_txt);
+  return;
+}
+
+
+=head2 warnings_ok( $file [, $text] )
+
+Check if warnings have been turned on.
+
+If C<$file> is a module, check if it contains a C<use warnings;> or C<use warnings::...> statement.
+However, if the perl version is <= 5.6, this test is skipped (C<use warnings> appeared in perl 5.6).
+
+If C<$file> is a script, check if it starts with C<#!...perl -w>.
+If the -w is not found and perl is >= 5.6, check for a C<use warnings;> or C<use warnings::...> statement.
+
+This is a pretty naive test which may be fooled in some edge cases.
+For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both used.
+
+=cut
+
+sub warnings_ok {
+  my $file = shift;
+  my $test_txt = shift || "use warnings $file";
+  $file = module_to_path($file);
+  my $is_module = _is_perl_module( $file );
+  my $is_script = _is_perl_script( $file );
+  if (!$is_script and $is_module and ! $CAN_USE_WARNINGS) {
+    $Test->skip();
+    $Test->diag("This version of perl ($]) does not have use warnings - perl 5.6 or higher is required");
+    return;
+  }
+
+  open my($fh), $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
+  while (<$fh>) {
+    if ($. == 1 and $is_script and $_ =~ $PERL_PATTERN) {
+      if (/perl\s+\-\w*[wW]/) {
+        $Test->ok(1, $test_txt);
+        return 1;
+      }
+    }
+    last unless $CAN_USE_WARNINGS;
+    next if (/^\s*#/); # Skip comments
+    next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
+    last if (/^\s*(__END__|__DATA__)/); # End of code
+    if ( /\buse\s+warnings(\s*;|::)/ ) {
       $Test->ok(1, $test_txt);
       return 1;
     }
@@ -207,6 +285,7 @@ otherwise it's a fail. The default coverage threshold is 50
 (meaning 50% of the code loaded has been covered by test).
 
 The threshold can be modified through C<$Test::Strict::COVERAGE_THRESHOLD>.
+The path to C<cover> utility can be modified through C<$Test::Strict::COVER>.
 
 The 50% threshold is a completely arbitrary value, which should not be considered
 as a good enough coverage.
@@ -224,13 +303,21 @@ sub all_cover_ok {
                        all_files(@dirs);
   _make_plan();
 
-  cover_path() or do{ $Test->ok(0); $Test->diag("cover binary not found"); return};
-  `$COVER -delete`;
-  foreach my $file ( @all_files ) {
-    `$PERL -MDevel::Cover $file 2>&1 > /dev/null`;
-    $Test->ok(1, "Coverage captured from $file" );
+  my $cover_bin    = cover_path() or do{ $Test->skip(); $Test->diag("Cover binary not found"); return};
+  my $perl_bin     = _untaint($PERL);
+  local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
+  `$cover_bin -delete`;
+  if ($?) {
+    $Test->skip();
+    $Test->diag("Cover binary $cover_bin not found");
+    return;
   }
-  $Test->ok(my $cover = `$COVER 2>/dev/null`, "Got cover");
+  foreach my $file ( @all_files ) {
+    $file = _untaint($file);
+    `$perl_bin -MDevel::Cover $file 2>&1 > /dev/null`;
+    $Test->ok(! $?, "Coverage captured from $file" );
+  }
+  $Test->ok(my $cover = `$cover_bin 2>/dev/null`, "Got cover");
 
   my ($total) = ($cover =~ /^\s*Total.+?([\d\.]+)\s*$/m);
   $Test->ok( $total >= $threshold, "coverage = ${total}% > ${threshold}%");
@@ -239,7 +326,9 @@ sub all_cover_ok {
 
 
 sub _is_perl_module {
-  shift =~ /\.pm$/i;
+  $_[0] =~ /\.pm$/i
+  ||
+  $_[0] =~ /::/;
 }
 
 
@@ -249,7 +338,7 @@ sub _is_perl_script {
   return 1 if $file =~ /\.t$/;
   open my($fh), $file or return;
   my $first = <$fh>;
-  return 1 if defined $first && ($first =~ /^#!.*perl/);
+  return 1 if defined $first && ($first =~ $PERL_PATTERN);
   return;
 }
 
@@ -276,7 +365,7 @@ sub cover_path {
   foreach my $path (split /:/, $ENV{PATH}) {
     my $path_cover = File::Spec->catfile($path, 'cover');
     next unless -x $path_cover;
-    return $COVER = $path_cover;
+    return $COVER = _untaint($path_cover);
   }
   return;
 }
@@ -290,6 +379,13 @@ sub _make_plan {
 }
 
 
+sub _untaint {
+  my @untainted = map { ($_ =~ $UNTAINT_PATTERN) } @_;
+  wantarray ? @untainted
+            : $untainted[0];
+}
+
+
 =head1 CAVEATS
 
 For C<all_cover_ok()> to work properly, it is strongly advised to install the most recent version of L<Devel::Cover>
@@ -299,7 +395,7 @@ this may lead to some side effects.
 
 =head1 SEE ALSO
 
-L<Test::More>, L<Test::Pod>
+L<Test::More>, L<Test::Pod>. L<Test::Distribution>, L<Test:NoWarnings>
 
 =head1 AUTHOR
 

@@ -8,7 +8,7 @@
 ##
 
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 8;
 use File::Temp qw( tempdir tempfile );
 
 
@@ -18,14 +18,15 @@ $inc = "-I $inc" if $inc;
 
 test1();
 test2();
+test3();
 
 exit;
 
 
 sub test1 {
   my $dir = make_bad_file();
-  my ($fh, $outfile) = tempfile( UNLINK => 1 );
-  ok( my $result = `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
+  my ($fh, $outfile) = tempfile();
+  ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
   like( $content, qr/^ok 1 - Syntax check /m, "Syntax ok" );
@@ -34,13 +35,23 @@ sub test1 {
 
 sub test2 {
   my $dir = make_another_bad_file();
-  my ($fh, $outfile) = tempfile( UNLINK => 1 );
-  ok( my $result = `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
+  my ($fh, $outfile) = tempfile();
+  ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
   like( $content, qr/not ok 1 - Syntax check /, "Syntax error" );
   like( $content, qr/^ok 2 - use strict /m, "Does have use strict" );
 }
+
+sub test3 {
+  my $file = make_bad_warning();
+  my ($fh, $outfile) = tempfile();
+  ok( `$perl $inc -e "use Test::Strict no_plan =>1; warnings_ok( '$file' )" 2>&1 > $outfile` );
+  local $/ = undef;
+  my $content = <$fh>;
+  like( $content, qr/not ok 1 - use warnings /, "Does not have use warnings" );
+}
+
 
 
 sub make_bad_file {
@@ -77,3 +88,27 @@ undef;use    strict ; foobarbaz + 1; # another comment
 DUMMY
   return $tmpdir;
 }
+
+
+sub make_bad_warning {
+  my $tmpdir = tempdir();
+  my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
+  print $fh <<'DUMMY';
+print "Hello world without use warnings";
+# use warnings;
+=over
+use warnings;
+=back
+
+=for
+use warnings;
+=end
+
+=pod
+use warnings;
+=cut
+
+DUMMY
+  return $filename;
+}
+
