@@ -60,8 +60,8 @@ use File::Spec;
 use FindBin qw($Bin);
 use File::Find::Rule;
 
-use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD );
-$VERSION = '0.01';
+use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER);
+$VERSION = '0.02';
 $PERL = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50;
 
@@ -97,7 +97,7 @@ sub all_perl_files {
 sub all_files {
   my @base_dirs = @_ ? @_
                      : File::Spec->catdir($Bin, $updir);
-  return map  { File::Spec->canonpath( $_ ) }
+  return map  { File::Spec->no_upwards( $_ ) }
          grep { $_ !~ m![\\/]?CVS[\\/]|[\\/]?.svn[\\/]! }  # Filter out cvs or subversion dirs/
               File::Find::Rule->file
                               ->readable
@@ -224,12 +224,13 @@ sub all_cover_ok {
                        all_files(@dirs);
   _make_plan();
 
-  `cover -delete`;
+  cover_path() or do{ $Test->ok(0); $Test->diag("cover binary not found"); return};
+  `$COVER -delete`;
   foreach my $file ( @all_files ) {
     `$PERL -MDevel::Cover $file 2>&1 > /dev/null`;
     $Test->ok(1, "Coverage captured from $file" );
   }
-  $Test->ok(my $cover = `cover 2>/dev/null`, "Got cover");
+  $Test->ok(my $cover = `$COVER 2>/dev/null`, "Got cover");
 
   my ($total) = ($cover =~ /^\s*Total.+?([\d\.]+)\s*$/m);
   $Test->ok( $total >= $threshold, "coverage = ${total}% > ${threshold}%");
@@ -267,6 +268,17 @@ sub module_to_path {
     return $candidate;
   }
   return $file; # non existing file - error is catched elsewhere
+}
+
+
+sub cover_path {
+  return $COVER if $COVER;
+  foreach my $path (split /:/, $ENV{PATH}) {
+    my $path_cover = File::Spec->catfile($path, 'cover');
+    next unless -x $path_cover;
+    return $COVER = $path_cover;
+  }
+  return;
 }
 
 

@@ -1,2 +1,6 @@
+0.02 - Sat Mar 19 00:17:00 2005 GMT
+  Added detection of 'cover' binary
+  Added $Test::Strict::COVER
+
 0.01 - Sat Mar 12 01:14:13 2005 GMT
   Initial release
