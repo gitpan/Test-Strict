@@ -6,7 +6,8 @@ Test::Strict - Check syntax, presence of use strict; and test coverage
 
 =head1 SYNOPSIS
 
-C<Test::Strict> lets you check the syntax and presence of C<use strict;>
+C<Test::Strict> lets you check the syntax, presence of C<use strict;>
+and presence C<use warnings;>
 in your perl code.
 It report its results in standard C<Test::Simple> fashion:
 
@@ -65,13 +66,16 @@ use File::Spec;
 use FindBin qw($Bin);
 use File::Find;
 
-use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS);
-$VERSION = '0.04';
+use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS );
+$VERSION = '0.05';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^([-+@\w./:\\]+)$|;
 $PERL_PATTERN       = qr/^#!.*perl/;
 $CAN_USE_WARNINGS   = ($] >= 5.006);
+$TEST_SYNTAX   = 1;
+$TEST_STRICT   = 1;
+$TEST_WARNINGS = 0;
 
 my $Test  = Test::Builder->new;
 my $updir = File::Spec->updir();
@@ -261,6 +265,12 @@ If the test plan is defined:
 
 the total number of files tested must be specified.
 
+You can control which tests are run on each perl site through:
+
+  $Test::Strict::TEST_SYNTAX   (default = 1)
+  $Test::Strict::TEST_STRICT   (default = 1)
+  $Test::Strict::TEST_WARNINGS (default = 0)
+
 =cut
 
 sub all_perl_files_ok {
@@ -268,8 +278,9 @@ sub all_perl_files_ok {
 
   _make_plan();
   foreach my $file ( @files ) {
-    syntax_ok( $file );
-    strict_ok( $file );
+    syntax_ok( $file )   if $TEST_SYNTAX;
+    strict_ok( $file )   if $TEST_STRICT;
+    warnings_ok( $file ) if $TEST_WARNINGS;
   }
 }
 

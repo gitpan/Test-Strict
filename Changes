@@ -1,3 +1,9 @@
+0.05 - Mon Mar 21 21:10:00 2005 GMT
+  Added $TEST_SYNTAX
+        $TEST_STRICT
+        $TEST_WARNINGS
+    - Thanks Christopher Laco
+
 0.04 - Mon Mar 21 20:40:00 2005 GMT
   Fixed warnings_ok() - now it detects "use warnings FATAL => 'all';" - Thanks Christopher Laco
 
