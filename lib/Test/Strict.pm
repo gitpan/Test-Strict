@@ -66,7 +66,7 @@ use FindBin qw($Bin);
 use File::Find;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS);
-$VERSION = '0.03';
+$VERSION = '0.04';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^([-+@\w./:\\]+)$|;
@@ -237,7 +237,7 @@ sub warnings_ok {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-    if ( /\buse\s+warnings(\s*;|::)/ ) {
+    if ( /\buse\s+warnings(\s|::|;)/ ) {
       $Test->ok(1, $test_txt);
       return 1;
     }

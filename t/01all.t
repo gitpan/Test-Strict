@@ -43,7 +43,7 @@ sub make_warning_file2 {
   my $tmpdir = tempdir();
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
   print $fh <<'DUMMY';
-   use  warnings ;
+   use warnings FATAL => 'all' ;
 print "Hello world";
 
 DUMMY

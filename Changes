@@ -1,3 +1,6 @@
+0.04 - Mon Mar 21 20:40:00 2005 GMT
+  Fixed warnings_ok() - now it detects "use warnings FATAL => 'all';" - Thanks Christopher Laco
+
 0.03 - Sun Mar 20 23:10:00 2005 GMT
   Added untainting - Thanks Christopher Laco
   Added $Test::Strict::UNTAINT_PATTERN
