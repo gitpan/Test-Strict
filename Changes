@@ -1,3 +1,6 @@
+0.06 - Mon Mar 25 00:10:00 2005 GMT
+  Skip blib/libdoc directory in all_perl_files_ok() and all_cover_ok()
+
 0.05 - Mon Mar 21 21:10:00 2005 GMT
   Added $TEST_SYNTAX
         $TEST_STRICT

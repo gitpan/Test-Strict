@@ -67,7 +67,7 @@ use FindBin qw($Bin);
 use File::Find;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS );
-$VERSION = '0.05';
+$VERSION = '0.06';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^([-+@\w./:\\]+)$|;
@@ -119,6 +119,7 @@ sub all_files {
   my @found;
   my $want_sub = sub {
     return if ($File::Find::dir =~ m![\\/]?CVS[\\/]|[\\/]?.svn[\\/]!); # Filter out cvs or subversion dirs/
+    return if ($File::Find::dir =~ m![\\/]?blib[\\/]libdoc$!); # Filter out pod doc in dist
     return unless (-f $File::Find::name && -r _);
     push @found, File::Spec->no_upwards( $File::Find::name );
   };
