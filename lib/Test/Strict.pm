@@ -11,7 +11,7 @@ and presence C<use warnings;>
 in your perl code.
 It report its results in standard C<Test::Simple> fashion:
 
-  use Test::Strict tests => 2;
+  use Test::Strict tests => 3;
   syntax_ok( 'bin/myscript.pl' );
   strict_ok( 'My::Module', "use strict; in My::Module" );
   warnings_ok( 'lib/My/Module.pm' );
@@ -67,7 +67,7 @@ use FindBin qw($Bin);
 use File::Find;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS );
-$VERSION = '0.06';
+$VERSION = '0.07';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^([-+@\w./:\\]+)$|;
@@ -104,22 +104,23 @@ sub import {
 
 
 ##
-## all_perl_files( @dirs )
+## _all_perl_files( @dirs )
 ## Returns a list of perl files in @dir
 ## if @dir is not provided, it searches from one dir level above
 ##
-sub all_perl_files {
-  my @all_files = all_files(@_);
+sub _all_perl_files {
+  my @all_files = _all_files(@_);
   return grep { _is_perl_module($_) || _is_perl_script($_) } @all_files;
 }
 
-sub all_files {
+sub _all_files {
   my @base_dirs = @_ ? @_
                      : File::Spec->catdir($Bin, $updir);
   my @found;
   my $want_sub = sub {
     return if ($File::Find::dir =~ m![\\/]?CVS[\\/]|[\\/]?.svn[\\/]!); # Filter out cvs or subversion dirs/
     return if ($File::Find::dir =~ m![\\/]?blib[\\/]libdoc$!); # Filter out pod doc in dist
+    return if ($File::Find::dir =~ m![\\/]?blib[\\/]man\d$!); # Filter out pod doc in dist
     return unless (-f $File::Find::name && -r _);
     push @found, File::Spec->no_upwards( $File::Find::name );
   };
@@ -147,7 +148,7 @@ For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both u
 sub syntax_ok {
   my $file     = shift;
   my $test_txt = shift || "Syntax check $file";
-  $file = module_to_path($file);
+  $file = _module_to_path($file);
   unless (-f $file && -r _) {
     $Test->ok( 0, $test_txt );
     $Test->diag( "File $file not found or not readable" );
@@ -187,7 +188,7 @@ For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both u
 sub strict_ok {
   my $file     = shift;
   my $test_txt = shift || "use strict   $file";
-  $file = module_to_path($file);
+  $file = _module_to_path($file);
   open my($fh), $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
   while (<$fh>) {
     next if (/^\s*#/); # Skip comments
@@ -221,7 +222,7 @@ For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both u
 sub warnings_ok {
   my $file = shift;
   my $test_txt = shift || "use warnings $file";
-  $file = module_to_path($file);
+  $file = _module_to_path($file);
   my $is_module = _is_perl_module( $file );
   my $is_script = _is_perl_script( $file );
   if (!$is_script and $is_module and ! $CAN_USE_WARNINGS) {
@@ -275,7 +276,7 @@ You can control which tests are run on each perl site through:
 =cut
 
 sub all_perl_files_ok {
-  my @files = all_perl_files( @_ );
+  my @files = _all_perl_files( @_ );
 
   _make_plan();
   foreach my $file ( @files ) {
@@ -312,10 +313,10 @@ sub all_cover_ok {
                 : (File::Spec->splitpath( $0 ))[1] || '.';
   my @all_files = grep { ! /$0$/o && $0 !~ /$_$/ }
                   grep { _is_perl_script($_)     }
-                       all_files(@dirs);
+                       _all_files(@dirs);
   _make_plan();
 
-  my $cover_bin    = cover_path() or do{ $Test->skip(); $Test->diag("Cover binary not found"); return};
+  my $cover_bin    = _cover_path() or do{ $Test->skip(); $Test->diag("Cover binary not found"); return};
   my $perl_bin     = _untaint($PERL);
   local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
   `$cover_bin -delete`;
@@ -358,7 +359,7 @@ sub _is_perl_script {
 ##
 ## Return the path of a module
 ##
-sub module_to_path {
+sub _module_to_path {
   my $file = shift;
   return $file unless ($file =~ /::/);
   my @parts = split /::/, $file;
@@ -372,7 +373,7 @@ sub module_to_path {
 }
 
 
-sub cover_path {
+sub _cover_path {
   return $COVER if $COVER;
   foreach my $path (split /:/, $ENV{PATH}) {
     my $path_cover = File::Spec->catfile($path, 'cover');

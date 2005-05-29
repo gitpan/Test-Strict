@@ -3,7 +3,7 @@ use strict;
 use Test::More;
 use Test::Strict;
 
-unless (Test::Strict::cover_path) {
+unless (Test::Strict::_cover_path) {
   plan skip_all => "cover binary required to run test coverage - Set \$Test::Strict::COVER to the path to 'cover'";
   exit;
 }

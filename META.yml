@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: Test-Strict
-version: 0.06
+version: 0.07
 license: perl
 distribution_type: module
 requires:
@@ -19,5 +19,5 @@ dynamic_config: 0
 provides:
   Test::Strict:
     file: lib/Test/Strict.pm
-    version: 0.06
+    version: 0.07
 generated_by: Module::Build version 0.21
