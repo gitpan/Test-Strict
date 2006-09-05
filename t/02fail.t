@@ -8,9 +8,17 @@
 ##
 
 use strict;
+BEGIN {
+  if ($^O =~ /win32/i) {
+    require Test::More;
+    Test::More->import(
+      skip_all => "Windows does not allow two processes to access the same file."
+    );
+  }
+}
+
 use Test::More tests => 8;
 use File::Temp qw( tempdir tempfile );
-
 
 my $perl  = $^X || 'perl';
 my $inc = join(' -I ', @INC) || '';

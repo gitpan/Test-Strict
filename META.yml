@@ -1,23 +1,17 @@
---- #YAML:1.0
-name: Test-Strict
-version: 0.07
-license: perl
-distribution_type: module
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Test-Strict
+version:      0.08
+version_from: lib/Test/Strict.pm
+installdirs:  site
 requires:
-  Devel::Cover: 0.43
-  File::Find: 0.01
-  File::Spec: 0.01
-  FindBin: 0.01
-  Test::Builder: 0.01
-  Test::Simple: 0.47
-recommends: {}
-build_requires:
-  File::Temp: 0.01
-  Test::Pod: 0.01
-conflicts: {}
-dynamic_config: 0
-provides:
-  Test::Strict:
-    file: lib/Test/Strict.pm
-    version: 0.07
-generated_by: Module::Build version 0.21
+    Devel::Cover:                  0.43
+    File::Find:                    0.01
+    File::Spec:                    0.01
+    File::Temp:                    0.01
+    FindBin:                       0.01
+    Test::Builder:                 0.01
+    Test::Simple:                  0.47
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17

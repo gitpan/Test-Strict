@@ -1,3 +1,12 @@
+0.08 - Tue Sep  5 16:50:00 2006 GMT
+  - Adressed ticket #21196. (smueller)
+  - Made the untaint pattern less vulnerable to win32
+    paths. (smueller)
+  - Now quoting meta-characters before use in regex.
+    (smueller)
+  - Skipping tests that fail on win32 because of the
+    testing procedure (smueller)
+
 0.07 - Mon May 29 03:45:00 2005 GMT
   Skip blib/man directory in all_perl_files_ok() and all_cover_ok()
 

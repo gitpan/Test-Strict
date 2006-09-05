@@ -67,10 +67,10 @@ use FindBin qw($Bin);
 use File::Find;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS );
-$VERSION = '0.07';
+$VERSION = '0.08';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
-$UNTAINT_PATTERN    = qr|^([-+@\w./:\\]+)$|;
+$UNTAINT_PATTERN    = qr|^(.*)$|;
 $PERL_PATTERN       = qr/^#!.*perl/;
 $CAN_USE_WARNINGS   = ($] >= 5.006);
 $TEST_SYNTAX   = 1;
@@ -167,6 +167,7 @@ sub syntax_ok {
   local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
 
   my $eval = `$perl_bin $inc -c $file 2>&1`;
+  $file = quotemeta($file);
   my $ok = $eval =~ qr!$file syntax OK!ms;
   $Test->ok($ok, $test_txt);
   unless ($ok) {
@@ -393,7 +394,7 @@ sub _make_plan {
 
 
 sub _untaint {
-  my @untainted = map { ($_ =~ $UNTAINT_PATTERN) } @_;
+  my @untainted = map {($_ =~ $UNTAINT_PATTERN)} @_;
   wantarray ? @untainted
             : $untainted[0];
 }
