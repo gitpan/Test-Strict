@@ -28,7 +28,7 @@ warnings_ok( $warning_file3 );
 
 
 sub make_warning_file1 {
-  my $tmpdir = tempdir();
+  my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
   print $fh <<'DUMMY';
 #!/usr/bin/perl -w
@@ -40,7 +40,7 @@ DUMMY
 }
 
 sub make_warning_file2 {
-  my $tmpdir = tempdir();
+  my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
   print $fh <<'DUMMY';
    use warnings FATAL => 'all' ;
@@ -51,7 +51,7 @@ DUMMY
 }
 
 sub make_warning_file3 {
-  my $tmpdir = tempdir();
+  my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
   print $fh <<'DUMMY';
   use strict;

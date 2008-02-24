@@ -33,7 +33,7 @@ exit;
 
 sub test1 {
   my $dir = make_bad_file();
-  my ($fh, $outfile) = tempfile();
+  my ($fh, $outfile) = tempfile( UNLINK => 1 );
   ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
@@ -43,7 +43,7 @@ sub test1 {
 
 sub test2 {
   my $dir = make_another_bad_file();
-  my ($fh, $outfile) = tempfile();
+  my ($fh, $outfile) = tempfile( UNLINK => 1 );
   ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
@@ -53,7 +53,7 @@ sub test2 {
 
 sub test3 {
   my $file = make_bad_warning();
-  my ($fh, $outfile) = tempfile();
+  my ($fh, $outfile) = tempfile( UNLINK => 1 );
   ok( `$perl $inc -e "use Test::Strict no_plan =>1; warnings_ok( '$file' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
@@ -63,7 +63,7 @@ sub test3 {
 
 
 sub make_bad_file {
-  my $tmpdir = tempdir();
+  my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
   print $fh <<'DUMMY';
 print "Hello world without use strict";
@@ -85,7 +85,7 @@ DUMMY
 }
 
 sub make_another_bad_file {
-  my $tmpdir = tempdir();
+  my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
   print $fh <<'DUMMY';
 =pod
@@ -99,7 +99,7 @@ DUMMY
 
 
 sub make_bad_warning {
-  my $tmpdir = tempdir();
+  my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
   print $fh <<'DUMMY';
 print "Hello world without use warnings";

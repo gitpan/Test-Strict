@@ -1,17 +1,23 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Test-Strict
-version:      0.08
-version_from: lib/Test/Strict.pm
-installdirs:  site
+---
+name: Test-Strict
+version: 0.09
+author:
+  - 'Pierre Denis, C<< <pierre@itrelease.net> >>.'
+abstract: 'Check syntax, presence of use strict; and test coverage'
+license: perl
 requires:
-    Devel::Cover:                  0.43
-    File::Find:                    0.01
-    File::Spec:                    0.01
-    File::Temp:                    0.01
-    FindBin:                       0.01
-    Test::Builder:                 0.01
-    Test::Simple:                  0.47
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+  Devel::Cover: 0.43
+  File::Find: 0.01
+  File::Spec: 0.01
+  FindBin: 0.01
+  Test::Builder: 0.01
+  Test::Simple: 0.47
+build_requires:
+  File::Temp: 0.01
+  Test::Pod: 0.01
+dynamic_config: 0
+provides:
+  Test::Strict:
+    file: lib/Test/Strict.pm
+    version: 0.09
+generated_by: Module::Build version 0.26

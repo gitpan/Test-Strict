@@ -66,8 +66,8 @@ use File::Spec;
 use FindBin qw($Bin);
 use File::Find;
 
-use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS );
-$VERSION = '0.08';
+use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $DEVEL_COVER_OPTIONS );
+$VERSION = '0.09';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -76,6 +76,7 @@ $CAN_USE_WARNINGS   = ($] >= 5.006);
 $TEST_SYNTAX   = 1;
 $TEST_STRICT   = 1;
 $TEST_WARNINGS = 0;
+$DEVEL_COVER_OPTIONS = '+ignore,"/Test/Strict\b"';
 
 my $Test  = Test::Builder->new;
 my $updir = File::Spec->updir();
@@ -299,6 +300,12 @@ otherwise it's a fail. The default coverage threshold is 50
 (meaning 50% of the code loaded has been covered by test).
 
 The threshold can be modified through C<$Test::Strict::COVERAGE_THRESHOLD>.
+
+You may want to select which files are selected for code
+coverage through C<$Test::Strict::DEVEL_COVER_OPTIONS>,
+see L<Devel::Cover> for the list of available options.
+The default is '+ignore,"/Test/Strict\b"'. 
+
 The path to C<cover> utility can be modified through C<$Test::Strict::COVER>.
 
 The 50% threshold is a completely arbitrary value, which should not be considered
@@ -328,7 +335,7 @@ sub all_cover_ok {
   }
   foreach my $file ( @all_files ) {
     $file = _untaint($file);
-    `$perl_bin -MDevel::Cover $file 2>&1 > /dev/null`;
+    `$perl_bin -MDevel::Cover=$DEVEL_COVER_OPTIONS $file 2>&1 > /dev/null`;
     $Test->ok(! $?, "Coverage captured from $file" );
   }
   $Test->ok(my $cover = `$cover_bin 2>/dev/null`, "Got cover");

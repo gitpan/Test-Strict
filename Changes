@@ -1,3 +1,7 @@
+0.09 - Sat Feb 23 23:50:00 2008 GMT
+  - Addressed rt #32704 Cleaning up /tmp directory (ANDK)
+  - Added $DEVEL_COVER_OPTIONS to give more control on which files to select for code coverage
+
 0.08 - Tue Sep  5 16:50:00 2006 GMT
   - Adressed ticket #21196. (smueller)
   - Made the untaint pattern less vulnerable to win32
