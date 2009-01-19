@@ -66,16 +66,17 @@ use File::Spec;
 use FindBin qw($Bin);
 use File::Find;
 
-use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $DEVEL_COVER_OPTIONS );
-$VERSION = '0.10';
+use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS );
+$VERSION = '0.11';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
 $PERL_PATTERN       = qr/^#!.*perl/;
 $CAN_USE_WARNINGS   = ($] >= 5.006);
-$TEST_SYNTAX   = 1;
-$TEST_STRICT   = 1;
-$TEST_WARNINGS = 0;
+$TEST_SYNTAX   = 1;  # Check compile
+$TEST_STRICT   = 1;  # Check use strict;
+$TEST_WARNINGS = 0;  # Check use warnings;
+$TEST_SKIP     = []; # List of files to skip check
 $DEVEL_COVER_OPTIONS = '+ignore,"/Test/Strict\b"';
 
 my $Test  = Test::Builder->new;
@@ -130,8 +131,11 @@ sub _all_files {
                     wanted   => $want_sub,
                     no_chdir => 1,
                  };
-  find( $find_arg, @base_dirs);
-  @found;
+  find( $find_arg, @base_dirs); # Find all potential file candidates
+
+  my $files_to_skip = $TEST_SKIP || [];
+  my %skip = map { $_ => undef } @$files_to_skip;
+  return grep { ! exists $skip{$_} } @found; # Exclude files to skip
 }
 
 
@@ -274,6 +278,7 @@ You can control which tests are run on each perl site through:
   $Test::Strict::TEST_SYNTAX   (default = 1)
   $Test::Strict::TEST_STRICT   (default = 1)
   $Test::Strict::TEST_WARNINGS (default = 0)
+  $Test::Strict::TEST_SKIP     (default = []) "Trusted" files to skip
 
 =cut
 

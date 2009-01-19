@@ -17,7 +17,7 @@ BEGIN {
   }
 }
 
-use Test::More tests => 8;
+use Test::More tests => 10;
 use File::Temp qw( tempdir tempfile );
 
 my $perl  = $^X || 'perl';
@@ -27,6 +27,7 @@ $inc = "-I $inc" if $inc;
 test1();
 test2();
 test3();
+test4();
 
 exit;
 
@@ -47,8 +48,8 @@ sub test2 {
   ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
-  like( $content, qr/not ok 1 - Syntax check /, "Syntax error" );
-  like( $content, qr/^ok 2 - use strict /m, "Does have use strict" );
+  like( $content, qr/not ok 1 \- Syntax check /, "Syntax error" );
+  like( $content, qr/^ok 2 \- use strict /m, "Does have use strict" );
 }
 
 sub test3 {
@@ -57,9 +58,17 @@ sub test3 {
   ok( `$perl $inc -e "use Test::Strict no_plan =>1; warnings_ok( '$file' )" 2>&1 > $outfile` );
   local $/ = undef;
   my $content = <$fh>;
-  like( $content, qr/not ok 1 - use warnings /, "Does not have use warnings" );
+  like( $content, qr/not ok 1 \- use warnings /, "Does not have use warnings" );
 }
 
+sub test4 {
+  my $test_file = make_warning_files();
+  my ($fh, $outfile) = tempfile( UNLINK => 1 );
+  ok( `$perl $inc $test_file 2>&1 > $outfile` );
+  local $/ = undef;
+  my $content = <$fh>;
+  like( $content, qr/not ok \d+ \- use warnings/, "Does not have use warnings" );
+}
 
 
 sub make_bad_file {
@@ -120,3 +129,41 @@ DUMMY
   return $filename;
 }
 
+sub make_warning_files {
+  my $tmpdir = tempdir( CLEANUP => 1 );
+  my ($fh1, $filename1) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
+  print $fh1 <<'DUMMY';
+use strict;
+use  warnings::register ;
+print "Hello world";
+
+DUMMY
+
+  my ($fh2, $filename2) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
+  print $fh2 <<'DUMMY';
+#!/usr/bin/perl -vw
+use strict;
+print "Hello world";
+
+DUMMY
+
+  my ($fh3, $filename3) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
+  print $fh3 <<'DUMMY';
+use  strict;
+local $^W = 1;
+print "Hello world";
+
+DUMMY
+
+  my ($fh4, $filename4) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
+  print $fh4 <<"TEST";
+use  strict;
+use warnings;
+use Test::Strict 'no_plan';
+local \$Test::Strict::TEST_WARNINGS = 1;
+all_perl_files_ok( '$tmpdir' );
+
+TEST
+
+  return $filename4;
+}

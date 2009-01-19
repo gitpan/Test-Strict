@@ -1,5 +1,8 @@
+0.11 - Sun Jan 18 20:30:00 2009 PST
+  - rt #41604: Allow to skip "trusted" files - thanks Jon
+
 0.10 - Sun Jan 18 19:50:00 2009 PST
-  - Fixed warning "no_plan takes no arguments ..." - thanks Apocalypse
+  - rt #41524: Fixed warning "no_plan takes no arguments ..." - thanks Apocalypse
 
 0.09 - Sat Feb 23 23:50:00 2008 GMT
   - Addressed rt #32704 Cleaning up /tmp directory (ANDK)
