@@ -67,7 +67,7 @@ use FindBin qw($Bin);
 use File::Find;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $DEVEL_COVER_OPTIONS );
-$VERSION = '0.09';
+$VERSION = '0.10';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -394,7 +394,7 @@ sub _cover_path {
 
 sub _make_plan {
   unless ($Test->has_plan) {
-    $Test->plan( no_plan => 1 );
+    $Test->plan( 'no_plan' );
   }
   $Test->expected_tests;
 }

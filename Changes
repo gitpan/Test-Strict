@@ -1,3 +1,6 @@
+0.10 - Sun Jan 18 19:50:00 2009 PST
+  - Fixed warning "no_plan takes no arguments ..." - thanks Apocalypse
+
 0.09 - Sat Feb 23 23:50:00 2008 GMT
   - Addressed rt #32704 Cleaning up /tmp directory (ANDK)
   - Added $DEVEL_COVER_OPTIONS to give more control on which files to select for code coverage
