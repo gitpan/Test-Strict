@@ -3,6 +3,17 @@ use strict;
 use Test::Strict;
 use File::Temp qw( tempdir tempfile );
 
+my $HAS_WIN32 = 0;
+if ($^O =~ /Win|Dos/i) { # Load Win32 if we are under Windows and if module is available
+  eval q{ use Win32 };
+  if ($@) {
+    warn "Optional module Win32 missing, consider installing\n";
+  }
+  else {
+    $HAS_WIN32 = 1;
+  }
+}
+
 ##
 ## This should check all perl files in the distribution
 ## including this current file, the Makefile.PL etc.
@@ -44,7 +55,7 @@ sub make_warning_file1 {
 print "hello world";
 
 DUMMY
-  return $filename;
+  return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
 }
 
 sub make_warning_file2 {
@@ -55,7 +66,7 @@ sub make_warning_file2 {
 print "Hello world";
 
 DUMMY
-  return $filename;
+  return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
 }
 
 sub make_warning_file3 {
@@ -67,7 +78,7 @@ sub make_warning_file3 {
 print "Hello world";
 
 DUMMY
-  return $filename;
+  return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
 }
 
 sub make_warning_files {
@@ -96,5 +107,5 @@ print "Hello world";
 
 DUMMY
 
-  return ($tmpdir, $filename3);
+  return ($tmpdir, $HAS_WIN32 ? Win32::GetLongPathName($filename3) : $filename3);
 }

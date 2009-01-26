@@ -1,3 +1,7 @@
+0.12 - Sun Jan 25 17:55:00 2009 PST
+  - rt #42575: Can deal with filenames with spaces - thanks Renee
+  - rt #42576: Deal with windows dos shorten filnames - thanks Renee
+
 0.11 - Sun Jan 18 20:30:00 2009 PST
   - rt #41604: Allow to skip "trusted" files - thanks Jon
 

@@ -65,9 +65,10 @@ use Test::Builder;
 use File::Spec;
 use FindBin qw($Bin);
 use File::Find;
+use Config;
 
-use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS );
-$VERSION = '0.11';
+use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
+$VERSION = '0.12';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -77,7 +78,9 @@ $TEST_SYNTAX   = 1;  # Check compile
 $TEST_STRICT   = 1;  # Check use strict;
 $TEST_WARNINGS = 0;  # Check use warnings;
 $TEST_SKIP     = []; # List of files to skip check
-$DEVEL_COVER_OPTIONS = '+ignore,"/Test/Strict\b"';
+$DEVEL_COVER_OPTIONS = '+ignore,".Test.Strict\b"';
+$DEVEL_COVER_DB      = 'cover_db';
+my $IS_WINDOWS = $^O =~ /win|dos/i;
 
 my $Test  = Test::Builder->new;
 my $updir = File::Spec->updir();
@@ -124,7 +127,7 @@ sub _all_files {
     return if ($File::Find::dir =~ m![\\/]?blib[\\/]libdoc$!); # Filter out pod doc in dist
     return if ($File::Find::dir =~ m![\\/]?blib[\\/]man\d$!); # Filter out pod doc in dist
     return unless (-f $File::Find::name && -r _);
-    push @found, File::Spec->no_upwards( $File::Find::name );
+    push @found, File::Spec->canonpath( File::Spec->no_upwards( $File::Find::name ) );
   };
   my $find_arg = {
                     %file_find_arg,
@@ -165,13 +168,13 @@ sub syntax_ok {
     return;
   }
 
-  my $inc = join(' -I ', @INC) || '';
+  my $inc = join(' -I ', map{ qq{"$_"} } @INC ) || '';
   $inc = "-I $inc" if $inc;
   $file            = _untaint($file);
   my $perl_bin     = _untaint($PERL);
   local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
 
-  my $eval = `$perl_bin $inc -c $file 2>&1`;
+  my $eval = `$perl_bin $inc -c \"$file\" 2>&1`;
   $file = quotemeta($file);
   my $ok = $eval =~ qr!$file syntax OK!ms;
   $Test->ok($ok, $test_txt);
@@ -332,18 +335,21 @@ sub all_cover_ok {
   my $cover_bin    = _cover_path() or do{ $Test->skip(); $Test->diag("Cover binary not found"); return};
   my $perl_bin     = _untaint($PERL);
   local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
-  `$cover_bin -delete`;
+  if ($IS_WINDOWS and ! -d $DEVEL_COVER_DB) {
+    mkdir $DEVEL_COVER_DB or warn "$DEVEL_COVER_DB: $!";
+  }
+  my $res = `$cover_bin -delete 2>&1`;
   if ($?) {
     $Test->skip();
-    $Test->diag("Cover binary $cover_bin not found");
+    $Test->diag("Cover at $cover_bin got error $?: $res");
     return;
   }
   foreach my $file ( @all_files ) {
     $file = _untaint($file);
-    `$perl_bin -MDevel::Cover=$DEVEL_COVER_OPTIONS $file 2>&1 > /dev/null`;
+    `$perl_bin -MDevel::Cover=$DEVEL_COVER_OPTIONS $file`;
     $Test->ok(! $?, "Coverage captured from $file" );
   }
-  $Test->ok(my $cover = `$cover_bin 2>/dev/null`, "Got cover");
+  $Test->ok(my $cover = `$cover_bin 2>&1`, "Got cover");
 
   my ($total) = ($cover =~ /^\s*Total.+?([\d\.]+)\s*$/m);
   $Test->ok( $total >= $threshold, "coverage = ${total}% > ${threshold}%");
@@ -387,10 +393,18 @@ sub _module_to_path {
 
 
 sub _cover_path {
-  return $COVER if $COVER;
-  foreach my $path (split /:/, $ENV{PATH}) {
+  return $COVER if defined $COVER;
+
+  my $os_separator = $IS_WINDOWS ? ';' : ':';
+  foreach my $path ((split /$os_separator/, $ENV{PATH}), @Config{qw(bin sitedir scriptdir)} ) {
+    $path ||= '.';
     my $path_cover = File::Spec->catfile($path, 'cover');
-    next unless -x $path_cover;
+    if ($IS_WINDOWS) {
+      next unless (-f $path_cover && -r _);
+    }
+    else {
+      next unless -x $path_cover;
+    }
     return $COVER = _untaint($path_cover);
   }
   return;
