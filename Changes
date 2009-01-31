@@ -1,3 +1,6 @@
+0.13 - Fri Jan 30 19:25:00 2009 PST
+  - rt #42922: Assignment to read only value - thanks Andreas
+
 0.12 - Sun Jan 25 17:55:00 2009 PST
   - rt #42575: Can deal with filenames with spaces - thanks Renee
   - rt #42576: Deal with windows dos shorten filnames - thanks Renee

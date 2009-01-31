@@ -68,7 +68,7 @@ use File::Find;
 use Config;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
-$VERSION = '0.12';
+$VERSION = '0.13';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -396,8 +396,8 @@ sub _cover_path {
   return $COVER if defined $COVER;
 
   my $os_separator = $IS_WINDOWS ? ';' : ':';
-  foreach my $path ((split /$os_separator/, $ENV{PATH}), @Config{qw(bin sitedir scriptdir)} ) {
-    $path ||= '.';
+  foreach ((split /$os_separator/, $ENV{PATH}), @Config{qw(bin sitedir scriptdir)} ) {
+    my $path = $_ || '.';
     my $path_cover = File::Spec->catfile($path, 'cover');
     if ($IS_WINDOWS) {
       next unless (-f $path_cover && -r _);
