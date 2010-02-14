@@ -68,7 +68,7 @@ use File::Find;
 use Config;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
-$VERSION = '0.13';
+$VERSION = '0.14';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -156,25 +156,34 @@ For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both u
 sub syntax_ok {
   my $file     = shift;
   my $test_txt = shift || "Syntax check $file";
+
   $file = _module_to_path($file);
   unless (-f $file && -r _) {
     $Test->ok( 0, $test_txt );
     $Test->diag( "File $file not found or not readable" );
     return;
   }
-  if (! _is_perl_module($file) and ! _is_perl_script($file)) {
+
+  my $is_script = _is_perl_script($file);
+  if (not $is_script and not _is_perl_module($file)) {
     $Test->ok( 0, $test_txt );
     $Test->diag( "$file is not a perl module or a perl script" );
     return;
   }
 
+  # Set the environment to compile the script or module
   my $inc = join(' -I ', map{ qq{"$_"} } @INC ) || '';
   $inc = "-I $inc" if $inc;
   $file            = _untaint($file);
   my $perl_bin     = _untaint($PERL);
   local $ENV{PATH} = _untaint($ENV{PATH}) if $ENV{PATH};
 
-  my $eval = `$perl_bin $inc -c \"$file\" 2>&1`;
+  # Add the -t -T switches if they are set in the #! line
+  my $switch = '';
+  $switch = _taint_switch($file) || '' if $is_script;
+
+  # Compile and check for errors
+  my $eval = `$perl_bin $inc -c$switch \"$file\" 2>&1`;
   $file = quotemeta($file);
   my $ok = $eval =~ qr!$file syntax OK!ms;
   $Test->ok($ok, $test_txt);
@@ -188,6 +197,7 @@ sub syntax_ok {
 =head2 strict_ok( $file [, $text] )
 
 Check if C<$file> contains a C<use strict;> statement.
+C<use Moose> and C<use Mouse> are also considered valid.
 
 This is a pretty naive test which may be fooled in some edge cases.
 For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both used.
@@ -198,12 +208,12 @@ sub strict_ok {
   my $file     = shift;
   my $test_txt = shift || "use strict   $file";
   $file = _module_to_path($file);
-  open my($fh), $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
+  open my $fh, '<', $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
   while (<$fh>) {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-    if ( /\buse\s+strict\s*;/ ) {
+    if ( /\buse\s+strict\s*;/ or /\buse\s+Moose\b/ or /\buse\s+Mouse\b/ ) {
       $Test->ok(1, $test_txt);
       return 1;
     }
@@ -217,11 +227,13 @@ sub strict_ok {
 
 Check if warnings have been turned on.
 
-If C<$file> is a module, check if it contains a C<use warnings;> or C<use warnings::...> statement.
-However, if the perl version is <= 5.6, this test is skipped (C<use warnings> appeared in perl 5.6).
+If C<$file> is a module, check if it contains a C<use warnings;> or C<use warnings::...>
+or C<use Moose> or C<use Mouse> statement.
+If the perl version is <= 5.6, this test is skipped (C<use warnings> appeared in perl 5.6).
 
 If C<$file> is a script, check if it starts with C<#!...perl -w>.
-If the -w is not found and perl is >= 5.6, check for a C<use warnings;> or C<use warnings::...> statement.
+If the -w is not found and perl is >= 5.6, check for a C<use warnings;> or C<use warnings::...>
+or C<use Moose> or C<use Mouse> statement.
 
 This is a pretty naive test which may be fooled in some edge cases.
 For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both used.
@@ -240,7 +252,7 @@ sub warnings_ok {
     return;
   }
 
-  open my($fh), $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
+  open my $fh, '<', $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
   while (<$fh>) {
     if ($. == 1 and $is_script and $_ =~ $PERL_PATTERN) {
       if (/perl\s+\-\w*[wW]/) {
@@ -252,7 +264,7 @@ sub warnings_ok {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-    if ( /\buse\s+warnings(\s|::|;)/ ) {
+  if ( /\buse\s+warnings(\s|::|;)/ or /\buse\s+Moose\b/ or /\buse\s+Mouse\b/ ) {
       $Test->ok(1, $test_txt);
       return 1;
     }
@@ -368,12 +380,22 @@ sub _is_perl_script {
   my $file = shift;
   return 1 if $file =~ /\.pl$/i;
   return 1 if $file =~ /\.t$/;
-  open my($fh), $file or return;
+  open my $fh, '<', $file or return;
   my $first = <$fh>;
   return 1 if defined $first && ($first =~ $PERL_PATTERN);
   return;
 }
 
+##
+## Returns the taint switches -tT in the #! line of a perl script
+##
+sub _taint_switch {
+  my $file = shift;
+  open my $fh, '<', $file or return;
+  my $first = <$fh>;
+  $first =~ /^#!.*\bperl.*\s-\w*([Tt]+)/ or return;
+  return $1;
+}
 
 ##
 ## Return the path of a module
@@ -439,11 +461,11 @@ L<Test::More>, L<Test::Pod>. L<Test::Distribution>, L<Test:NoWarnings>
 
 =head1 AUTHOR
 
-Pierre Denis, C<< <pierre@itrelease.net> >>.
+Pierre Denis, C<< <pdenis@gmail.com> >>.
 
 =head1 COPYRIGHT
 
-Copyright 2005, Pierre Denis, All Rights Reserved.
+Copyright 2005, 2010 Pierre Denis, All Rights Reserved.
 
 You may use, modify, and distribute this package under the
 same terms as Perl itself.

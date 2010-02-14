@@ -37,6 +37,12 @@ warnings_ok( $warning_file2 );
 my $warning_file3 = make_warning_file3();
 warnings_ok( $warning_file3 );
 
+my $warning_file4 = make_warning_file4();
+warnings_ok( $warning_file4 );
+
+my $warning_file5 = make_warning_file5();
+warnings_ok( $warning_file5 );
+
 {
   my ($warnings_files_dir, $file_to_skip) = make_warning_files();
   local $Test::Strict::TEST_WARNINGS = 1;
@@ -81,6 +87,30 @@ DUMMY
   return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
 }
 
+sub make_warning_file4 {
+  my $tmpdir = tempdir( CLEANUP => 1 );
+  my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
+  print $fh <<'DUMMY';
+use  Mouse ;
+print "Hello world";
+
+DUMMY
+  return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
+}
+
+
+sub make_warning_file5 {
+  my $tmpdir = tempdir( CLEANUP => 1 );
+  my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
+  print $fh <<'DUMMY';
+use  Moose;
+print "Hello world";
+
+DUMMY
+  return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
+}
+
+
 sub make_warning_files {
   my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh1, $filename1) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
@@ -103,6 +133,14 @@ DUMMY
   print $fh3 <<'DUMMY';
 use  strict;
 local $^W = 1;
+print "Hello world";
+
+DUMMY
+
+  my ($fh4, $filename4) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
+  print $fh4 <<'DUMMY';
+#!/usr/bin/perl -Tw
+use strict;
 print "Hello world";
 
 DUMMY
