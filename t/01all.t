@@ -1,10 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
+use Test::More;
 use Test::Strict;
 use File::Temp qw( tempdir tempfile );
 
 my $HAS_WIN32 = 0;
-if ($^O =~ /Win|Dos/i) { # Load Win32 if we are under Windows and if module is available
+if ($^O =~ /MSWin/i) { # Load Win32 if we are under Windows and if module is available
   eval q{ use Win32 };
   if ($@) {
     warn "Optional module Win32 missing, consider installing\n";
@@ -13,6 +14,7 @@ if ($^O =~ /Win|Dos/i) { # Load Win32 if we are under Windows and if module is a
     $HAS_WIN32 = 1;
   }
 }
+plan  tests => 36;
 
 ##
 ## This should check all perl files in the distribution
@@ -20,7 +22,10 @@ if ($^O =~ /Win|Dos/i) { # Load Win32 if we are under Windows and if module is a
 ## and check for "use strict;" and syntax ok
 ##
 
-all_perl_files_ok();
+diag "First all_perl_files_ok starting";
+my $res = all_perl_files_ok();
+is $res, '', 'returned empty string??';
+diag "First all_perl_files_ok done";
 
 strict_ok( $0, "got strict" );
 syntax_ok( $0, "syntax" );
@@ -28,28 +33,36 @@ syntax_ok( 'Test::Strict' );
 strict_ok( 'Test::Strict' );
 warnings_ok( $0 );
 
+diag 'Start creating files';
 my $warning_file1 = make_warning_file1();
-warnings_ok( $warning_file1 );
+diag "File1: $warning_file1";
+warnings_ok( $warning_file1, 'file1' );
 
 my $warning_file2 = make_warning_file2();
-warnings_ok( $warning_file2 );
+diag "File2: $warning_file2";
+warnings_ok( $warning_file2, 'file2' );
 
 my $warning_file3 = make_warning_file3();
-warnings_ok( $warning_file3 );
+diag "File3: $warning_file3";
+warnings_ok( $warning_file3, 'file3' );
 
 my $warning_file4 = make_warning_file4();
-warnings_ok( $warning_file4 );
+diag "File4: $warning_file4";
+warnings_ok( $warning_file4, 'file4' );
 
 my $warning_file5 = make_warning_file5();
-warnings_ok( $warning_file5 );
+diag "File5: $warning_file5";
+warnings_ok( $warning_file5, 'file5' );
 
 {
-  my ($warnings_files_dir, $file_to_skip) = make_warning_files();
+  my ($warnings_files_dir, $files, $file_to_skip) = make_warning_files();
+  diag explain $files;
+  diag "File to skip: $file_to_skip";
   local $Test::Strict::TEST_WARNINGS = 1;
   local $Test::Strict::TEST_SKIP = [ $file_to_skip ];
   all_perl_files_ok( $warnings_files_dir );
 }
-
+exit;
 
 
 sub make_warning_file1 {
@@ -113,6 +126,8 @@ DUMMY
 
 sub make_warning_files {
   my $tmpdir = tempdir( CLEANUP => 1 );
+
+  my @files;
   my ($fh1, $filename1) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
   print $fh1 <<'DUMMY';
 use strict;
@@ -120,6 +135,7 @@ use  warnings::register ;
 print "Hello world";
 
 DUMMY
+  push @files, $filename1;
 
   my ($fh2, $filename2) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
   print $fh2 <<'DUMMY';
@@ -128,6 +144,7 @@ use strict;
 print "Hello world";
 
 DUMMY
+  push @files, $filename2;
 
   my ($fh3, $filename3) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
   print $fh3 <<'DUMMY';
@@ -136,6 +153,7 @@ local $^W = 1;
 print "Hello world";
 
 DUMMY
+  push @files, $filename3;
 
   my ($fh4, $filename4) = tempfile( DIR => $tmpdir, SUFFIX => '.pl' );
   print $fh4 <<'DUMMY';
@@ -144,6 +162,7 @@ use strict;
 print "Hello world";
 
 DUMMY
+  push @files, $filename4;
 
-  return ($tmpdir, $HAS_WIN32 ? Win32::GetLongPathName($filename3) : $filename3);
+  return ($tmpdir, \@files, $filename3);
 }
