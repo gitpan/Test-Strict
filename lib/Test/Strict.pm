@@ -68,7 +68,7 @@ use File::Find;
 use Config;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
-$VERSION = '0.15';
+$VERSION = '0.16';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -80,7 +80,7 @@ $TEST_WARNINGS = 0;  # Check use warnings;
 $TEST_SKIP     = []; # List of files to skip check
 $DEVEL_COVER_OPTIONS = '+ignore,".Test.Strict\b"';
 $DEVEL_COVER_DB      = 'cover_db';
-my $IS_WINDOWS = $^O =~ /win|dos/i;
+my $IS_WINDOWS = $^O =~ /MSwin/i;
 
 my $Test  = Test::Builder->new;
 my $updir = File::Spec->updir();
@@ -165,11 +165,11 @@ sub syntax_ok {
   }
 
   my $is_script = _is_perl_script($file);
-  if (not $is_script and not _is_perl_module($file)) {
-    $Test->ok( 0, $test_txt );
-    $Test->diag( "$file is not a perl module or a perl script" );
-    return;
-  }
+#  if (not $is_script and not _is_perl_module($file)) {
+#    $Test->ok( 0, $test_txt );
+#    $Test->diag( "$file is not a perl module or a perl script" );
+#    return;
+#  }
 
   # Set the environment to compile the script or module
   my $inc = join(' -I ', map{ qq{"$_"} } @INC ) || '';
@@ -198,6 +198,7 @@ sub syntax_ok {
 
 Check if C<$file> contains a C<use strict;> statement.
 C<use Moose> and C<use Mouse> are also considered valid.
+use Modern::Perl is also accepted.
 
 This is a pretty naive test which may be fooled in some edge cases.
 For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both used.
@@ -213,7 +214,11 @@ sub strict_ok {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-    if ( /\buse\s+strict\s*;/ or /\buse\s+Moose\b/ or /\buse\s+Mouse\b/ ) {
+    if ( /\buse\s+strict\s*;/
+      or /\buse\s+Moose\b/
+      or /\buse\s+Mouse\b/
+      or /\buse\s+Modern::Perl\b/
+    ) {
       $Test->ok(1, $test_txt);
       return 1;
     }
@@ -228,12 +233,12 @@ sub strict_ok {
 Check if warnings have been turned on.
 
 If C<$file> is a module, check if it contains a C<use warnings;> or C<use warnings::...>
-or C<use Moose> or C<use Mouse> statement.
+or C<use Moose> or C<use Mouse> statement. use Modern::Perl is also accepted.
 If the perl version is <= 5.6, this test is skipped (C<use warnings> appeared in perl 5.6).
 
 If C<$file> is a script, check if it starts with C<#!...perl -w>.
 If the -w is not found and perl is >= 5.6, check for a C<use warnings;> or C<use warnings::...>
-or C<use Moose> or C<use Mouse> statement.
+or C<use Moose> or C<use Mouse> statement. use Modern::Perl is also accepted.
 
 This is a pretty naive test which may be fooled in some edge cases.
 For a module, the path (lib/My/Module.pm) or the name (My::Module) can be both used.
@@ -264,7 +269,11 @@ sub warnings_ok {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-  if ( /\buse\s+warnings(\s|::|;)/ or /\buse\s+Moose\b/ or /\buse\s+Mouse\b/ ) {
+  if ( /\buse\s+warnings(\s|::|;)/
+    or /\buse\s+Moose\b/
+    or /\buse\s+Mouse\b/
+    or /\buse\s+Modern::Perl\b/
+  ) {
       $Test->ok(1, $test_txt);
       return 1;
     }

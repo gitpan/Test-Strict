@@ -26,5 +26,6 @@ requires:
   Test::Builder: 0.01
   Test::Simple: 0.47
 resources:
+  license: http://dev.perl.org/licenses/
   repository: https://github.com/szabgab/Test-Strict
-version: 0.15
+version: 0.16
