@@ -68,7 +68,7 @@ use File::Find;
 use Config;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
-$VERSION = '0.17';
+$VERSION = '0.18';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -215,7 +215,7 @@ sub strict_ok {
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
     if ( /\buse\s+strict\s*;/
-      or /\buse\s+Moose\b/
+      or /\buse\s+Moose(?:[^\w:]|$)/
       or /\buse\s+Mouse\b/
       or /\buse\s+Modern::Perl\b/
     ) {
@@ -471,6 +471,10 @@ L<Test::More>, L<Test::Pod>. L<Test::Distribution>, L<Test:NoWarnings>
 =head1 AUTHOR
 
 Pierre Denis, C<< <pdenis@gmail.com> >>.
+
+=head1 MAINTAINER
+
+L<Gabor Szabo|http://szabgab.com/>
 
 =head1 COPYRIGHT
 
