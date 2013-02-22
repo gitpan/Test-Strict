@@ -68,7 +68,7 @@ use File::Find;
 use Config;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
-$VERSION = '0.19';
+$VERSION = '0.20';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -210,22 +210,97 @@ sub strict_ok {
   my $test_txt = shift || "use strict   $file";
   $file = _module_to_path($file);
   open my $fh, '<', $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
-  while (<$fh>) {
+  my $ok = _strict_ok($fh);
+  $Test->ok($ok, $test_txt);
+  return $ok;
+}
+
+sub _strict_ok {
+  my ($in) = @_;
+  while (<$in>) {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-    if ( /\buse\s+strict\s*;/
-      or /\buse\s+Moose(?:[^\w:]|$)/
-      or /\buse\s+Mouse\b/
-      or /\buse\s+Modern::Perl\b/
-    ) {
-      $Test->ok(1, $test_txt);
-      return 1;
+    foreach my $name (modules_enabling_strict()) {
+      # TODO: improve this matching (e.g. see TODO test)
+      if (/\buse\s+$name(?:[;\s]|$)/) {
+        return 1;
+      }
     }
   }
-  $Test->ok(0, $test_txt);
   return;
 }
+
+=head2 modules_enabling_strict
+
+Experimental. Returning a list of modules and pragmata that enable strict
+
+List taken from https://metacpan.org/source/DAXIM/Module-CPANTS-Analyse-0.86/lib/Module/CPANTS/Kwalitee/Uses.pm
+
+=cut
+
+sub modules_enabling_strict {
+ return qw(
+   strict
+   Any::Moose
+   Class::Spiffy
+   Coat
+   common::sense
+   Dancer
+   Mo
+   Modern::Perl
+   Mojo::Base
+   Moo
+   Moose
+   Moose::Role
+   MooseX::Declare
+   MooseX::Types
+   Mouse
+   Mouse::Role
+   perl5
+   perl5i::1
+   perl5i::2
+   perl5i::latest
+   Spiffy
+   strictures
+ );
+}
+
+=head2 modules_enabling_warnings
+
+Experimental. Returning a list of modules and pragmata that enable strict
+
+List taken from https://metacpan.org/source/DAXIM/Module-CPANTS-Analyse-0.86/lib/Module/CPANTS/Kwalitee/Uses.pm
+
+=cut
+
+sub modules_enabling_warnings {
+ return qw(
+    warnings
+    Any::Moose
+    Class::Spiffy
+    Coat
+    common::sense
+    Dancer
+    Mo
+    Modern::Perl
+    Mojo::Base
+    Moo
+    Moose
+    Moose::Role
+    MooseX::Declare
+    MooseX::Types
+    Mouse
+    Mouse::Role
+    perl5
+    perl5i::1
+    perl5i::2
+    perl5i::latest
+    Spiffy
+    strictures
+ );
+}
+
 
 
 =head2 warnings_ok( $file [, $text] )
@@ -258,10 +333,17 @@ sub warnings_ok {
   }
 
   open my $fh, '<', $file or do { $Test->ok(0, $test_txt); $Test->diag("Could not open $file: $!"); return; };
-  while (<$fh>) {
+  my $ok = _warnings_ok($is_script, $fh);
+  $Test->ok($ok, $test_txt);
+  return $ok
+}
+
+# TODO unite with _strict_ok
+sub _warnings_ok {
+  my ($is_script, $in) = @_;
+  while (<$in>) {
     if ($. == 1 and $is_script and $_ =~ $PERL_PATTERN) {
       if (/perl\s+\-\w*[wW]/) {
-        $Test->ok(1, $test_txt);
         return 1;
       }
     }
@@ -269,16 +351,12 @@ sub warnings_ok {
     next if (/^\s*#/); # Skip comments
     next if (/^\s*=.+/ .. /^\s*=(cut|back|end)/); # Skip pod
     last if (/^\s*(__END__|__DATA__)/); # End of code
-  if ( /\buse\s+warnings(\s|::|;)/
-    or /\buse\s+Moose\b/
-    or /\buse\s+Mouse\b/
-    or /\buse\s+Modern::Perl\b/
-  ) {
-      $Test->ok(1, $test_txt);
-      return 1;
+    foreach my $name (modules_enabling_warnings()) {
+      if (/\buse\s+$name(?:[;\s]|$)/) {
+        return 1;
+      }
     }
   }
-  $Test->ok(0, $test_txt);
   return;
 }
 
@@ -467,6 +545,10 @@ this may lead to some side effects.
 =head1 SEE ALSO
 
 L<Test::More>, L<Test::Pod>. L<Test::Distribution>, L<Test:NoWarnings>
+
+=head1 REPOSITORY
+
+L<https://github.com/szabgab/Test-Strict>
 
 =head1 AUTHOR
 

@@ -17,12 +17,14 @@ BEGIN {
   }
 }
 
-use Test::More tests => 13;
+use Test::More tests => 15;
 use File::Temp qw( tempdir tempfile );
 
 my $perl  = $^X || 'perl';
 my $inc = join(' -I ', @INC) || '';
 $inc = "-I $inc" if $inc;
+
+require Test::Strict;
 
 test1();
 test2();
@@ -30,13 +32,24 @@ test3();
 test4();
 test5();
 
+TODO: {
+  local $TODO = 'improve strict matching!';
+  my $code = q{print "use strict "};
+  open my $fh1, '<', \$code;
+  ok !Test::Strict::_strict_ok($fh1), 'use strict in print';
+}
+
 exit;
 
 
 sub test1 {
+  my $bad_file_content = _bad_file_content();
+  open my $fh1, '<', \$bad_file_content;
+  ok !Test::Strict::_strict_ok($fh1), 'bad_file';
+
   my $dir = make_bad_file();
   my ($fh, $outfile) = tempfile( UNLINK => 1 );
-  ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile` );
+  ok( `$perl $inc -MTest::Strict -e "all_perl_files_ok( '$dir' )" 2>&1 > $outfile`, 'all_perl_files_ok' );
   local $/ = undef;
   my $content = <$fh>;
   like( $content, qr/^ok 1 - Syntax check /m, "Syntax ok" );
@@ -90,7 +103,12 @@ sub test5 {
 sub make_bad_file {
   my $tmpdir = tempdir( CLEANUP => 1 );
   my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pL' );
-  print $fh <<'DUMMY';
+  print $fh _bad_file_content();
+  return $tmpdir;
+}
+
+sub _bad_file_content {
+    return <<'DUMMY';
 print "Hello world without use strict";
 # use strict;
 =over
@@ -106,7 +124,6 @@ use strict;
 =cut
 
 DUMMY
-  return $tmpdir;
 }
 
 sub make_another_bad_file {
