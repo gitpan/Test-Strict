@@ -68,7 +68,7 @@ use File::Find;
 use Config;
 
 use vars qw( $VERSION $PERL $COVERAGE_THRESHOLD $COVER $UNTAINT_PATTERN $PERL_PATTERN $CAN_USE_WARNINGS $TEST_SYNTAX $TEST_STRICT $TEST_WARNINGS $TEST_SKIP $DEVEL_COVER_OPTIONS $DEVEL_COVER_DB );
-$VERSION = '0.20';
+$VERSION = '0.21';
 $PERL    = $^X || 'perl';
 $COVERAGE_THRESHOLD = 50; # 50%
 $UNTAINT_PATTERN    = qr|^(.*)$|;
@@ -252,6 +252,7 @@ sub modules_enabling_strict {
    Mojo::Base
    Moo
    Moose
+   Moose::Exporter
    Moose::Role
    MooseX::Declare
    MooseX::Types
@@ -287,6 +288,7 @@ sub modules_enabling_warnings {
     Mojo::Base
     Moo
     Moose
+    Moose::Exporter
     Moose::Role
     MooseX::Declare
     MooseX::Types

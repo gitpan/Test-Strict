@@ -1,7 +1,7 @@
 {
    "abstract" : "unknown",
    "author" : [
-      "unknown"
+      "Pierre Denis <pdenis@cpan.org>"
    ],
    "dynamic_config" : 0,
    "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.120921",
@@ -51,5 +51,10 @@
          "url" : "https://github.com/szabgab/Test-Strict"
       }
    },
-   "version" : "0.20"
+   "version" : "0.21",
+   "x_contributors" : [
+      "Gabor Szabo <szabgab@cpan.org>",
+      "Peter Vereshagin <veresc@cpan.org>",
+      "Graham Knop <haarg@cpan.org>"
+   ]
 }

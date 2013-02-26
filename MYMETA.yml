@@ -1,7 +1,7 @@
 ---
 abstract: unknown
 author:
-  - unknown
+  - 'Pierre Denis <pdenis@cpan.org>'
 build_requires:
   ExtUtils::MakeMaker: 0
 configure_requires:
@@ -28,4 +28,8 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: https://github.com/szabgab/Test-Strict
-version: 0.20
+version: 0.21
+x_contributors:
+  - 'Gabor Szabo <szabgab@cpan.org>'
+  - 'Peter Vereshagin <veresc@cpan.org>'
+  - 'Graham Knop <haarg@cpan.org>'
