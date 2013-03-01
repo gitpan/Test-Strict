@@ -28,7 +28,7 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: https://github.com/szabgab/Test-Strict
-version: 0.21
+version: 0.22
 x_contributors:
   - 'Gabor Szabo <szabgab@cpan.org>'
   - 'Peter Vereshagin <veresc@cpan.org>'
