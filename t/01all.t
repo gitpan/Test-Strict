@@ -14,7 +14,10 @@ if ($^O =~ /MSWin/i) { # Load Win32 if we are under Windows and if module is ava
     $HAS_WIN32 = 1;
   }
 }
-plan  tests => 39;
+
+my $tests = 39;
+$tests += 2 if -e 'blib/lib/Test/Strict.pm';
+plan  tests => $tests;
 
 ##
 ## This should check all perl files in the distribution
@@ -44,8 +47,8 @@ strict_ok( $modern_perl_file1, 'strict modern_perl1' );
 # still lets the syntax_ok test work
 my $extensionless_file = make_extensionless_perl_file1();
 diag $extensionless_file;
-ok ! Test::Strict::_is_perl_module($extensionless_file);
-ok ! Test::Strict::_is_perl_script($extensionless_file);
+ok ! Test::Strict::_is_perl_module($extensionless_file), "_is_perl_module $extensionless_file";
+ok ! Test::Strict::_is_perl_script($extensionless_file), "_is_perl_script $extensionless_file";
 warnings_ok( $extensionless_file, 'warn extensionless_file' );
 strict_ok( $extensionless_file, 'strict extensionless_file' );
 syntax_ok( $extensionless_file, 'syntax extensionless_file' );
@@ -72,13 +75,29 @@ diag "File5: $warning_file5";
 warnings_ok( $warning_file5, 'file5' );
 
 {
+  my $warning_file6 = make_warning_file6();
+  diag "File6: $warning_file6";
+
+  local @Test::Strict::MODULES_ENABLING_WARNINGS
+    = (@Test::Strict::MODULES_ENABLING_WARNINGS, 'Custom');
+
+  local @Test::Strict::MODULES_ENABLING_STRICT
+    = (@Test::Strict::MODULES_ENABLING_STRICT, 'Custom');
+
+  warnings_ok( $warning_file6, 'file6' );
+  strict_ok( $warning_file6, 'file6' );
+}
+
+{
   my ($warnings_files_dir, $files, $file_to_skip) = make_warning_files();
   diag explain $files;
   diag "File to skip: $file_to_skip";
   local $Test::Strict::TEST_WARNINGS = 1;
   local $Test::Strict::TEST_SKIP = [ $file_to_skip ];
+  diag "Start all_perl_files_ok on $warnings_files_dir (should be 2*3 = 6 tests)";
   all_perl_files_ok( $warnings_files_dir );
 }
+
 exit;
 
 sub make_modern_perl_file1 {
@@ -165,6 +184,16 @@ DUMMY
   return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
 }
 
+sub make_warning_file6 {
+  my $tmpdir = tempdir( CLEANUP => 1 );
+  my ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.pm' );
+  print $fh <<'DUMMY';
+use Custom;
+print "Hello world";
+
+DUMMY
+  return $HAS_WIN32 ? Win32::GetLongPathName($filename) : $filename;
+}
 
 sub make_warning_files {
   my $tmpdir = tempdir( CLEANUP => 1 );
