@@ -3,32 +3,32 @@ abstract: unknown
 author:
   - 'Pierre Denis <pdenis@cpan.org>'
 build_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 configure_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.82, CPAN::Meta::Converter version 2.132830'
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: Test-Strict
 no_index:
   directory:
     - t
     - inc
 requires:
-  Devel::Cover: 0.43
-  File::Find: 0.01
-  File::Spec: 0.01
-  File::Temp: 0.01
-  FindBin: 0.01
-  Test::Builder: 0.01
-  Test::Simple: 0.47
+  Devel::Cover: '0.43'
+  File::Find: '0.01'
+  File::Spec: '0.01'
+  File::Temp: '0.01'
+  FindBin: '0.01'
+  Test::Builder: '0.01'
+  Test::Simple: '0.47'
 resources:
   license: http://dev.perl.org/licenses/
   repository: https://github.com/szabgab/Test-Strict
-version: 0.23
+version: '0.24'
 x_contributors:
   - 'Gabor Szabo <szabgab@cpan.org>'
   - 'Peter Vereshagin <veresc@cpan.org>'
