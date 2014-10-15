@@ -1,5 +1,5 @@
 {
-   "abstract" : "unknown",
+   "abstract" : "Check syntax, presence of use strict; and test coverage",
    "author" : [
       "Pierre Denis <pdenis@cpan.org>"
    ],
@@ -21,13 +21,11 @@
    },
    "prereqs" : {
       "build" : {
-         "requires" : {
-            "ExtUtils::MakeMaker" : "0"
-         }
+         "requires" : {}
       },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "0"
+            "ExtUtils::MakeMaker" : "6.64"
          }
       },
       "runtime" : {
@@ -37,21 +35,27 @@
             "File::Spec" : "0.01",
             "File::Temp" : "0.01",
             "FindBin" : "0.01",
-            "Test::Builder" : "0.01",
-            "Test::Simple" : "0.47"
+            "Test::Builder" : "0.01"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "File::Temp" : "0.01",
+            "Test::More" : "1.00"
          }
       }
    },
    "release_status" : "stable",
    "resources" : {
-      "license" : [
-         "http://dev.perl.org/licenses/"
-      ],
       "repository" : {
-         "url" : "https://github.com/szabgab/Test-Strict"
+         "type" : "git",
+         "url" : "http://github.com/szabgab/Test-Strict.git",
+         "web" : "http://github.com/szabgab/Test-Strict",
+         "x_bugtracker" : "http://github.com/szabgab/Test-Strict",
+         "x_license" : "http://dev.perl.org/licenses/"
       }
    },
-   "version" : "0.24",
+   "version" : "0.25",
    "x_contributors" : [
       "Gabor Szabo <szabgab@cpan.org>",
       "Peter Vereshagin <veresc@cpan.org>",

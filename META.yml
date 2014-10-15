@@ -1,11 +1,12 @@
 ---
-abstract: unknown
+abstract: 'Check syntax, presence of use strict; and test coverage'
 author:
   - 'Pierre Denis <pdenis@cpan.org>'
 build_requires:
-  ExtUtils::MakeMaker: '0'
+  File::Temp: '0.01'
+  Test::More: '1.00'
 configure_requires:
-  ExtUtils::MakeMaker: '0'
+  ExtUtils::MakeMaker: '6.64'
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
 license: perl
@@ -24,11 +25,9 @@ requires:
   File::Temp: '0.01'
   FindBin: '0.01'
   Test::Builder: '0.01'
-  Test::Simple: '0.47'
 resources:
-  license: http://dev.perl.org/licenses/
-  repository: https://github.com/szabgab/Test-Strict
-version: '0.24'
+  repository: http://github.com/szabgab/Test-Strict.git
+version: '0.25'
 x_contributors:
   - 'Gabor Szabo <szabgab@cpan.org>'
   - 'Peter Vereshagin <veresc@cpan.org>'
